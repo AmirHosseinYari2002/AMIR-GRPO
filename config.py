@@ -67,6 +67,9 @@ class AlgorithmConfig:
     loss_type: str = "grpo"
     epsilon: float = 0.20
     epsilon_high: float = 0.20
+    mask_truncated_completions: int = 0
+    scale_rewards: str = "group"
+    importance_sampling_level: str = "token"
 
 
 @dataclass
@@ -202,6 +205,13 @@ def build_parser() -> argparse.ArgumentParser:
                       help="Lower clipping factor for advantage normalization.")
     algo.add_argument("--epsilon_high", type=float, default=0.20,
                       help="Upper clipping factor for advantage normalization.")
+    algo.add_argument("--mask_truncated_completions", type=int, choices=[0, 1], default=0, 
+                      help="Whether to exclude truncated or incomplete completions from loss and reward computation.")
+    algo.add_argument("--scale_rewards", type=str, default="group",
+                      help="Specifies how to normalize or scale rewards across samples. Options: ['group', 'batch', 'none'].")
+    algo.add_argument("--importance_sampling_level", type=str, default="token",
+                  help="Determines the granularity at which importance sampling is applied. Options: ['token', 'sequence'].")
+
 
     # --- DPO Integration ---
     dpo = parser.add_argument_group("DPO Integration (only if trainer_type='grpo_dpo')")
@@ -277,6 +287,9 @@ def _namespace_to_config(ns: argparse.Namespace) -> Config:
         loss_type=ns.loss_type,
         epsilon=ns.epsilon,
         epsilon_high=ns.epsilon_high,
+        mask_truncated_completions=ns.mask_truncated_completions,
+        scale_rewards=ns.scale_rewards,
+        importance_sampling_level=ns.importance_sampling_level,
     )
 
     dpo = DPOConfig(

@@ -60,6 +60,9 @@ def build_grpo_config(args) -> GRPOConfig:
         loss_type=args.algorithm.loss_type,
         epsilon=args.algorithm.epsilon,
         epsilon_high=args.algorithm.epsilon_high,
+        mask_truncated_completions=bool(args.algorithm.mask_truncated_completions),
+        scale_rewards=args.algorithm.scale_rewards,
+        importance_sampling_level=args.algorithm.importance_sampling_level,
         # Logging / IO
         logging_steps=args.logging.logging_steps,
         save_steps=args.logging.save_steps,

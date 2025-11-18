@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Any, Dict
 import re
 
 from datasets import Dataset, load_dataset
@@ -205,3 +205,35 @@ def get_math500_questions(split: str = "test") -> Dataset:
         }
 
     return ds.map(_format)
+
+
+def get_olympiadbench_questions(split: str = "train") -> Dataset:
+    """Load Hothan/OlympiadBench (OE_TO_maths_en_COMP) and format for chat-style training.
+
+    Uses 'question' as prompt and keeps 'final_answer' as a list[str].
+    This is compatible with the grader that checks multiple correct answers.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    ds = load_dataset("Hothan/OlympiadBench", "OE_TO_maths_en_COMP")[split]
+
+    def _format(example: Dict[str, Any]) -> Dict[str, Any]:
+        fa = example["final_answer"]
+        if isinstance(fa, str):
+            answers = [fa.strip()]
+        elif isinstance(fa, list):
+            answers = [a.strip() for a in fa]
+        else:
+            raise TypeError(f"Unexpected final_answer type: {type(fa)}")
+
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": example["question"].strip()},
+            ],
+            "answer": answers,
+        }
+
+    return ds.map(_format)
+

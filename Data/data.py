@@ -159,3 +159,26 @@ def get_gsm8k_questions(split: str = "train") -> Dataset:
         }
     )
     return data
+
+
+def get_aime25_questions(split: str = "test") -> Dataset:
+    """Load math-ai/aime25 and format records for chat-style training.
+
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = getattr(args.core, "calibration", getattr(args, "calibration", False))
+
+    ds = load_dataset("math-ai/aime25", "default")[split]
+
+    def _format(example):
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": example["problem"]},
+            ],
+            "answer": str(example["answer"]).strip(),
+        }
+
+    return ds.map(_format)

@@ -4,8 +4,8 @@ from pathlib import Path
 import torch
 
 from config import get_parser
-from eval_utils import evaluate_model_batched, load_model_and_tokenizer
-from Data.data import get_gsm8k_questions
+from Eval.eval_utils import evaluate_model_batched, load_model_and_tokenizer
+from Data.data import get_gsm8k_questions, get_aime25_questions
 
 
 def main() -> None:
@@ -18,8 +18,10 @@ def main() -> None:
     # ----------------------------
     # Dataset loading
     # ----------------------------
-    if args.dataset_name.lower() == "gsm8k":
-        test_dataset = get_gsm8k_questions(args.test_dataset_split)
+    if args.core.dataset_name.lower() == "gsm8k":
+        test_dataset = get_gsm8k_questions(args.core.test_dataset_split)
+    elif args.core.dataset_name.lower() == "aime25":
+        test_dataset = get_aime25_questions(args.core.test_dataset_split)
     else:
         raise ValueError(f"Unknown dataset: {args.dataset_name}")
 

@@ -20,7 +20,7 @@ class CoreConfig:
     max_seq_length: int = 2048
     load_in_4bit: int = 0 
     model_dir: str = ""  # required via CLI
-    dataset_name: str = "gsm8k" # {"gsm8k", "aime25"}
+    dataset_name: str = "gsm8k" # {"gsm8k", "aime25", "math500"}
     dataset_split: str = "train"
     test_dataset_split: str = "test"
     trainer_type: str = "grpo"  # {"grpo", "grpo_dpo"}
@@ -144,7 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
                       help="Load model weights in 4-bit (1) or full precision (0).")
     core.add_argument("--model_dir", required=True,
                       help="Output directory for checkpoints and logs.")
-    core.add_argument("--dataset_name", required=True, choices=["gsm8k", "aime25"],
+    core.add_argument("--dataset_name", required=True, choices=["gsm8k", "aime25", "math500"],
                       help="Dataset used for training/eval.")
     core.add_argument("--dataset_split", default="train",
                       help="Split used for training. Typically 'train'.")

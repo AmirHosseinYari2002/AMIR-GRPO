@@ -146,7 +146,7 @@ def get_gsm8k_questions(split: str = "train") -> Dataset:
     enabled so it can inject the correct system prompt.
     """
     args = parse_args()
-    calibration = getattr(args.core, "calibration", getattr(args, "calibration", False))
+    calibration = args.core.calibration
 
     data = load_dataset("openai/gsm8k", "main")[split]
     data = data.map(
@@ -168,7 +168,7 @@ def get_aime25_questions(split: str = "test") -> Dataset:
     enabled so it can inject the correct system prompt.
     """
     args = parse_args()
-    calibration = getattr(args.core, "calibration", getattr(args, "calibration", False))
+    calibration = args.core.calibration
 
     ds = load_dataset("math-ai/aime25", "default")[split]
 
@@ -179,6 +179,29 @@ def get_aime25_questions(split: str = "test") -> Dataset:
                 {"role": "user", "content": example["problem"]},
             ],
             "answer": str(example["answer"]).strip(),
+        }
+
+    return ds.map(_format)
+
+
+def get_math500_questions(split: str = "test") -> Dataset:
+    """Load HuggingFaceH4/MATH-500 and format records for chat-style training.
+
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    ds = load_dataset("HuggingFaceH4/MATH-500")[split]
+
+    def _format(example):
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": example["problem"]},
+            ],
+            "answer": example["answer"].strip(),
         }
 
     return ds.map(_format)

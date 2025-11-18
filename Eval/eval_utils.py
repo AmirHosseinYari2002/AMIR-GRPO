@@ -8,7 +8,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerBase, PreTrainedModel
 from peft import PeftModel
 
-from Data.data import extract_numeric_answer, extract_xml_answer
+from Data.math_grader import answer_tag_reward_fn_for_orz
 
 
 # ------------------------------
@@ -152,12 +152,11 @@ def evaluate_model_batched(
     *,
     batch_size: int = 8,
     max_samples: Optional[int] = None,
-    tol: float = 1e-3,
     device: Optional[torch.device] = None,
     progress: bool = True,
 ) -> Tuple[float, int, int]:
     """
-    Evaluate on a test dataset.
+    Evaluate on a test dataset using answer_tag_reward_fn_for_orz.
     """
     device = _get_device(device)
     if next(model.parameters()).device.type != device.type:
@@ -167,15 +166,14 @@ def evaluate_model_batched(
     correct = 0
     total = 0
     buf_prompts: List[Union[str, Sequence[dict]]] = []
-    buf_gts: List[Union[str, float, int]] = []
+    buf_gts: List[Union[str, float, int, list]] = []
 
     iterator = enumerate(dataset)
     if progress:
         try:
             n = len(dataset)
         except TypeError:
-            # Fallback: unknown length
-            n = None
+            n = None  # unknown length
         iterator = enumerate(tqdm(dataset, total=n))
 
     for i, sample in iterator:
@@ -193,26 +191,18 @@ def evaluate_model_batched(
         if not flush:
             continue
 
+        # Generate a batch of responses
         outputs = generate_batch(
             prompts=buf_prompts,
             tokenizer=tokenizer,
             model=model,
             device=device,
         )
-        preds_xml = [extract_xml_answer(o) for o in outputs]
-        numeric_preds = [extract_numeric_answer(p) for p in preds_xml]
 
-        for pred, gt_str in zip(numeric_preds, buf_gts):
-            # Normalize ground truth to float when possible
-            try:
-                gt = float(str(gt_str).replace(",", ""))
-            except ValueError:
-                gt = None
-
-            if pred is not None and gt is not None:
-                is_correct = math.isclose(pred, gt, rel_tol=tol, abs_tol=tol)
-            else:
-                is_correct = str(pred).strip().lower() == str(gt_str).strip().lower()
+        # Grade each response with the provided reward fn
+        for pred_text, gt in zip(outputs, buf_gts):
+            _, reward = answer_tag_reward_fn_for_orz(pred_text, gt, fast=False)
+            is_correct = (reward == 1.0)
 
             if is_correct:
                 correct += 1

@@ -3,16 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 import torch
 
-from config import get_parser
+from config import parse_args
 from Eval.eval_utils import evaluate_model_batched, load_model_and_tokenizer
 from Data.data import get_gsm8k_questions, get_aime25_questions, get_math500_questions, get_olympiadbench_questions
 
 
 def main() -> None:
-    parser = get_parser()
-    args = parser.parse_args()
+    # Parse CLI into typed config
+    args = parse_args()
 
-    out_dir = Path(args.model_dir).expanduser()
+    out_dir = Path(args.core.model_dir).expanduser()
     out = out_dir.as_posix()
 
     # ----------------------------
@@ -37,7 +37,7 @@ def main() -> None:
     model, tokenizer = load_model_and_tokenizer(
         directory_path=out,
         device=device,
-        load_in_4bit=bool(args.load_in_4bit),
+        load_in_4bit=bool(args.core.load_in_4bit),
     )
     model.eval()
 

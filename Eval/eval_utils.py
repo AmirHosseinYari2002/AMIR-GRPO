@@ -60,7 +60,7 @@ def load_model_and_tokenizer(
     model = AutoModelForCausalLM.from_pretrained(
         directory_path,
         load_in_4bit=load_in_4bit,
-        torch_dtype=dtype, 
+        dtype=dtype, 
         device_map=device_map,
     )
 

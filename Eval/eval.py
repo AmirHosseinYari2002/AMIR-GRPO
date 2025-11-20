@@ -5,7 +5,7 @@ import torch
 
 from config import parse_args
 from Eval.eval_utils import evaluate_model_batched, load_model_and_tokenizer
-from Data.data import get_gsm8k_questions, get_aime25_questions, get_math500_questions, get_olympiadbench_questions
+from Data.data import get_gsm8k_questions, get_aime25_questions, get_math500_questions, get_olympiadbench_questions, get_amc23_questions
 
 
 def main() -> None:
@@ -26,8 +26,10 @@ def main() -> None:
         test_dataset = get_math500_questions(args.core.test_dataset_split)
     elif args.core.dataset_name.lower() == "olympiadbench":
         test_dataset = get_olympiadbench_questions()
+    elif args.core.dataset_name.lower() == "amc23":
+        test_dataset = get_amc23_questions(args.core.test_dataset_split)
     else:
-        raise ValueError(f"Unknown dataset: {args.dataset_name}")
+        raise ValueError(f"Unknown dataset: {args.core.dataset_name}")
 
     # ----------------------------
     # Device & model loading

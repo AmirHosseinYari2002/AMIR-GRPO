@@ -237,3 +237,25 @@ def get_olympiadbench_questions(split: str = "train") -> Dataset:
 
     return ds.map(_format)
 
+
+def get_amc23_questions(split: str = "test") -> Dataset:
+    """Load math-ai/amc23 and format records for chat-style training.
+
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    ds = load_dataset("math-ai/amc23")[split]
+
+    def _format(example):
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": example["question"]},
+            ],
+            "answer": example["answer"].strip(),
+        }
+
+    return ds.map(_format)

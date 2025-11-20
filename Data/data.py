@@ -140,7 +140,7 @@ def extract_hash_answer(text: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 def get_gsm8k_questions(split: str = "train") -> Dataset:
-    """Load GSM8K and format records for chat-style training.
+    """Load GSM8K and format records for chat-style conversation.
 
     The function reads the global CLI args to determine whether calibration is
     enabled so it can inject the correct system prompt.
@@ -162,7 +162,7 @@ def get_gsm8k_questions(split: str = "train") -> Dataset:
 
 
 def get_aime25_questions(split: str = "test") -> Dataset:
-    """Load math-ai/aime25 and format records for chat-style training.
+    """Load math-ai/aime25 and format records for chat-style conversation.
 
     The function reads the global CLI args to determine whether calibration is
     enabled so it can inject the correct system prompt.
@@ -185,7 +185,7 @@ def get_aime25_questions(split: str = "test") -> Dataset:
 
 
 def get_math500_questions(split: str = "test") -> Dataset:
-    """Load HuggingFaceH4/MATH-500 and format records for chat-style training.
+    """Load HuggingFaceH4/MATH-500 and format records for chat-style conversation.
 
     The function reads the global CLI args to determine whether calibration is
     enabled so it can inject the correct system prompt.
@@ -208,7 +208,7 @@ def get_math500_questions(split: str = "test") -> Dataset:
 
 
 def get_olympiadbench_questions(split: str = "train") -> Dataset:
-    """Load Hothan/OlympiadBench (OE_TO_maths_en_COMP) and format for chat-style training.
+    """Load Hothan/OlympiadBench (OE_TO_maths_en_COMP) and format for chat-style conversation.
 
     Uses 'question' as prompt and keeps 'final_answer' as a list[str].
     This is compatible with the grader that checks multiple correct answers.
@@ -239,7 +239,7 @@ def get_olympiadbench_questions(split: str = "train") -> Dataset:
 
 
 def get_amc23_questions(split: str = "test") -> Dataset:
-    """Load math-ai/amc23 and format records for chat-style training.
+    """Load math-ai/amc23 and format records for chat-style conversation.
 
     The function reads the global CLI args to determine whether calibration is
     enabled so it can inject the correct system prompt.
@@ -248,6 +248,29 @@ def get_amc23_questions(split: str = "test") -> Dataset:
     calibration = args.core.calibration
 
     ds = load_dataset("math-ai/amc23")[split]
+
+    def _format(example):
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": example["question"]},
+            ],
+            "answer": example["answer"].strip(),
+        }
+
+    return ds.map(_format)
+
+
+def get_minervamath_questions(split: str = "test") -> Dataset:
+    """Load math-ai/minervamath and format records for chat-style conversation.
+
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    ds = load_dataset("math-ai/minervamath")[split]
 
     def _format(example):
         return {

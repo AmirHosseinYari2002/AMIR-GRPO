@@ -21,7 +21,7 @@ from trl.trainer.grpo_trainer import GRPOTrainer
 from Train.trainer import GRPOWithDPOTrainer
 
 # Datasets
-from Data.data import get_gsm8k_questions 
+from Data.data import get_gsm8k_questions, get_competition_math_questions
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +112,8 @@ def main() -> None:
 
     if dataset_name == "gsm8k":
         train_dataset = get_gsm8k_questions(dataset_split)
+    elif dataset_name == "math":
+        train_dataset = get_competition_math_questions(dataset_split)
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
@@ -134,7 +136,7 @@ def main() -> None:
     if use_calibration:
         reward_funcs = [
             brier_score,
-            expression_correctness_reward_func,
+            # expression_correctness_reward_func,
             xmlcount_reward_func,
             strict_format_reward_func_with_calib,
             int_reward_func,
@@ -142,7 +144,7 @@ def main() -> None:
         ]
     else:
         reward_funcs = [
-            expression_correctness_reward_func,
+            # expression_correctness_reward_func,
             xmlcount_reward_func,
             strict_format_reward_func,
             int_reward_func,

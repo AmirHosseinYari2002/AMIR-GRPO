@@ -282,3 +282,37 @@ def get_minervamath_questions(split: str = "test") -> Dataset:
         }
 
     return ds.map(_format)
+
+
+def get_competition_math_questions(split: str = "train"):
+    """Load qwedsacf/competition_math and format records for chat‐style conversation,
+       filtering to only keep problems of difficulty Level 3-5.
+    
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    ds = load_dataset("qwedsacf/competition_math", split=split)
+
+    # Filter to only keep level “Level 3”, “Level 4”, or “Level 5”
+    ds = ds.filter(lambda ex: ex["level"] in {"Level 3", "Level 4", "Level 5"})
+
+    def _format(example):
+        prompt = [
+            {"role": "system", "content": build_system_prompt(calibration)},
+            {"role": "user", "content": example["problem"]},
+        ]
+        sol = example["solution"]
+        m = re.search(r"\\boxed\{([^}]+)\}", sol)
+        if m:
+            final_answer = m.group(1).strip()
+        else:
+            raise ValueError(f"No boxed answer found in solution: {sol}")
+        return {
+            "prompt": prompt,
+            "answer": final_answer,
+        }
+
+    return ds.map(_format)

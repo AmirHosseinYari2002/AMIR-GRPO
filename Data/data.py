@@ -285,34 +285,47 @@ def get_minervamath_questions(split: str = "test") -> Dataset:
 
 
 def get_competition_math_questions(split: str = "train"):
-    """Load qwedsacf/competition_math and format records for chat‐style conversation,
-       filtering to only keep problems of difficulty Level 3-5.
-    
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
-    """
     args = parse_args()
     calibration = args.core.calibration
 
     ds = load_dataset("qwedsacf/competition_math", split=split)
 
-    # Filter to only keep level “Level 3”, “Level 4”, or “Level 5”
+    # Keep Level 3–5
     ds = ds.filter(lambda ex: ex["level"] in {"Level 3", "Level 4", "Level 5"})
 
+    # Regexes
+    BOXED_RE = re.compile(r"\\boxed\s*\{([\s\S]*?)\}")   # match \boxed{ ... } across newlines
+    NUM_RE   = re.compile(r"^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$", re.IGNORECASE)  # ints/decimals/sci
+    FRAC_RE  = re.compile(r"^-?\s*\d+\s*/\s*\d+$")       # simple fractions like -a/b
+
+    def extract_final(sol: str):
+        m = BOXED_RE.search(sol)
+        if not m:
+            return None
+        final = m.group(1).strip()
+
+        # strip surrounding $ or trailing punctuation/spaces
+        final = final.strip("$ ").rstrip(".,;")
+        final = re.sub(r"\s+", "", final)
+
+        # keep numbers and simple fractions only
+        if NUM_RE.fullmatch(final) or FRAC_RE.fullmatch(final):
+            return final
+        return None
+
     def _format(example):
-        prompt = [
-            {"role": "system", "content": build_system_prompt(calibration)},
-            {"role": "user", "content": example["problem"]},
-        ]
-        sol = example["solution"]
-        m = re.search(r"\\boxed\{([^}]+)\}", sol)
-        if m:
-            final_answer = m.group(1).strip()
-        else:
-            raise ValueError(f"No boxed answer found in solution: {sol}")
+        final = extract_final(example["solution"])
         return {
-            "prompt": prompt,
-            "answer": final_answer,
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user",   "content": example["problem"]},
+            ],
+            "answer": final,
         }
 
-    return ds.map(_format)
+    # Overwrite columns so trainer only sees what it needs
+    ds = ds.map(_format, remove_columns=ds.column_names)
+    # Now drop rows without a usable answer
+    ds = ds.filter(lambda x: x["answer"] is not None)
+
+    return ds

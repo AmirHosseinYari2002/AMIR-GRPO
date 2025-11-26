@@ -366,3 +366,40 @@ def get_aquarat_questions(split: str = "test") -> Dataset:
 
     data = data.map(_format_example)
     return data
+
+
+def get_livemathbench_questions(
+    subset: str = "v202412_AMC_en", split: str = "test"
+) -> Dataset:
+    """Load LiveMathBench and format records for chat-style conversation.
+
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    data = load_dataset("opencompass/LiveMathBench", subset)[split]
+
+    def strip_dollars(s: str) -> str:
+        # remove surrounding $...$ or $$...$$
+        s = s.strip()
+        if s.startswith("$$") and s.endswith("$$"):
+            return s[2:-2].strip()
+        if s.startswith("$") and s.endswith("$"):
+            return s[1:-1].strip()
+        return s
+
+    def _format_example(x):
+        answer_clean = strip_dollars(x["answer"])
+
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": x["question"]},
+            ],
+            "answer": answer_clean,
+        }
+
+    data = data.map(_format_example)
+    return data

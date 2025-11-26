@@ -329,3 +329,40 @@ def get_competition_math_questions(split: str = "train"):
     ds = ds.filter(lambda x: x["answer"] is not None)
 
     return ds
+
+
+def get_aquarat_questions(split: str = "test") -> Dataset:
+    """Load AQUA-RAT and format records for chat-style conversation.
+
+    The function reads the global CLI args to determine whether calibration is
+    enabled so it can inject the correct system prompt.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    data = load_dataset("deepmind/aqua_rat")[split]
+
+    def _format_example(x):
+        correct_letter = x["correct"].strip()
+        answer_text = None
+
+        # options look like ["A) ...", "B) ...", ...]
+        for opt in x["options"]:
+            opt_stripped = opt.strip()
+            # Match first character to the correct letter
+            if opt_stripped and opt_stripped[0] == correct_letter:
+                # Drop the "A)" / "B)" etc. label and leading spaces
+                parts = opt_stripped.split(")", 1)
+                answer_text = parts[1].strip() if len(parts) > 1 else opt_stripped
+                break
+
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": x["question"]},
+            ],
+            "answer": answer_text,
+        }
+
+    data = data.map(_format_example)
+    return data

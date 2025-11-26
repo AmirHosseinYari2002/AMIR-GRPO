@@ -4,8 +4,8 @@ from pathlib import Path
 import torch
 
 from config import parse_args
-from Eval.eval_utils import evaluate_model_batched, load_model_and_tokenizer
-from Data.data import get_gsm8k_questions, get_aime25_questions, get_math500_questions, get_olympiadbench_questions, get_amc23_questions, get_minervamath_questions
+from Eval.eval_utils import evaluate_model_batched, load_model_and_tokenizer, load_model_and_tokenizer_from_hf
+from Data.data import get_gsm8k_questions, get_aime25_questions, get_math500_questions, get_olympiadbench_questions, get_amc23_questions, get_minervamath_questions, get_aquarat_questions
 
 
 def main() -> None:
@@ -28,6 +28,8 @@ def main() -> None:
         test_dataset = get_olympiadbench_questions()
     elif args.core.dataset_name.lower() == "amc23":
         test_dataset = get_amc23_questions(args.core.test_dataset_split)
+    elif args.core.dataset_name.lower() == "aquarat":
+        test_dataset = get_aquarat_questions(args.core.test_dataset_split)
     elif args.core.dataset_name.lower() == "minervamath":
         test_dataset = get_minervamath_questions(args.core.test_dataset_split)
     else:

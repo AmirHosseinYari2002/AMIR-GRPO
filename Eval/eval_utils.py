@@ -42,6 +42,7 @@ def _choose_dtype() -> torch.dtype:
 
 def load_model_and_tokenizer(
     directory_path: str,
+    hf_token: str,
     *,
     device: Optional[torch.device] = None,
     load_in_4bit: bool = False,
@@ -62,11 +63,12 @@ def load_model_and_tokenizer(
         load_in_4bit=load_in_4bit,
         dtype=dtype, 
         device_map=device_map,
+        token=hf_token,
     )
 
     # Attach adapters
-    model = PeftModel.from_pretrained(model, directory_path)
-    tokenizer = AutoTokenizer.from_pretrained(directory_path)
+    model = PeftModel.from_pretrained(model, directory_path, token=hf_token)
+    tokenizer = AutoTokenizer.from_pretrained(directory_path, token=hf_token)
 
     # If use_cache exists, leave it True for eval/generation.
     if hasattr(model.config, "use_cache"):

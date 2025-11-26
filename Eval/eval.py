@@ -16,6 +16,11 @@ def main() -> None:
     out = out_dir.as_posix()
 
     # ----------------------------
+    # HF token
+    # ----------------------------
+    hf_token = "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"
+
+    # ----------------------------
     # Dataset loading
     # ----------------------------
     if args.core.dataset_name.lower() == "gsm8k":
@@ -46,6 +51,7 @@ def main() -> None:
         directory_path=out,
         device=device,
         load_in_4bit=bool(args.core.load_in_4bit),
+        hf_token=hf_token,
     )
     model.eval()
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import wandb
+from huggingface_hub import HfApi, create_repo
 
 from config import parse_args, save_config_files
 from Train.models import bf16_fp16_flags, load_ref_model, load_train_model
@@ -179,12 +180,44 @@ def main() -> None:
     trainer.train()
 
     # ----------------------------
-    # Save artifacts
+    # Save artifacts locally
     # ----------------------------
     model.save_pretrained(out.as_posix())
     tokenizer.save_pretrained(out.as_posix())
     model.config.save_pretrained(out.as_posix())
     save_config_files(args, out)
+
+    # ----------------------------
+    # Push to Hugging Face Hub
+    # ----------------------------
+    hf_token = "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"
+    user = "AmirHossein2002"
+    private = True
+    repo_name = out.name
+    repo_id = f"{user}/{repo_name}" 
+
+    api = HfApi(token=hf_token)
+
+    create_repo(
+        repo_id=repo_id,
+        repo_type="model",
+        private=private,
+        token=hf_token,
+        exist_ok=True,
+    )
+
+    api.upload_folder(
+        folder_path=out.as_posix(),
+        repo_id=repo_id,
+        repo_type="model",
+        ignore_patterns=[
+            "checkpoint-*",      # ignore checkpoint folders at root
+            "checkpoint-*/**",   # ignore everything inside them
+            "global_step*",      # (optional) HF Trainer-style steps
+            "global_step*/**",
+        ],
+    )
+
 
 
 if __name__ == "__main__":

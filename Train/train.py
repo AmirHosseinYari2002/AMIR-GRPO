@@ -174,6 +174,7 @@ def main() -> None:
             beta_dpo=args.dpo.beta_dpo,
             pair_mining=args.dpo.pair_mining,
             max_pairs_per_group=args.dpo.max_pairs_per_group,
+            dpo_chunk_size=2,
         )
 
     trainer = TrainerCls(**trainer_kwargs)
@@ -192,7 +193,7 @@ def main() -> None:
     # ----------------------------
     hf_token = "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"
     user = "AmirHossein2002"
-    private = True
+    private = False
     repo_name = out.name
     repo_id = f"{user}/{repo_name}" 
 

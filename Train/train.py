@@ -22,7 +22,7 @@ from trl.trainer.grpo_trainer import GRPOTrainer
 from Train.trainer import GRPOWithDPOTrainer
 
 # Datasets
-from Data.data import get_gsm8k_questions, get_competition_math_questions
+from Data.data import get_gsm8k_questions, get_competition_math_questions, get_dapo_math_questions
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +115,8 @@ def main() -> None:
         train_dataset = get_gsm8k_questions(dataset_split)
     elif dataset_name == "math":
         train_dataset = get_competition_math_questions(dataset_split)
+    elif dataset_name == "dapo_math":
+        train_dataset = get_dapo_math_questions(dataset_split)
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 

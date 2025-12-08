@@ -401,3 +401,25 @@ def get_livemathbench_questions(split: str = "test") -> Dataset:
 
     data = data.map(_format_example)
     return data
+
+
+def get_dapo_math_questions(split: str = "train") -> Dataset:
+    """Load open-r1/DAPO-Math-17k-Processed (en) and format records for chat-style conversation.
+
+    Uses the 'prompt' field as the user question and 'solution' as the final answer.
+    """
+    args = parse_args()
+    calibration = args.core.calibration
+
+    ds = load_dataset("open-r1/DAPO-Math-17k-Processed", "en")[split]
+
+    def _format(example):
+        return {
+            "prompt": [
+                {"role": "system", "content": build_system_prompt(calibration)},
+                {"role": "user", "content": example["prompt"]},
+            ],
+            "answer": str(example["solution"]).strip(),
+        }
+
+    return ds.map(_format)

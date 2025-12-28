@@ -44,7 +44,20 @@ The final format that must be followed is:
 
 
 def build_system_prompt(calibration: bool = False) -> str:
-    """Return the appropriate system prompt template."""
+    """Return the appropriate system prompt template.
+
+    Parameters
+    ----------
+    calibration:
+        If ``True``, return the calibrated prompt template that includes
+        ``<analysis>`` and ``<confidence>`` sections. Otherwise, return the
+        base template with only ``<think>`` and ``<answer>`` fields.
+
+    Returns
+    -------
+    prompt:
+        The formatted system prompt string to be used in the chat messages.
+    """
 
     return _CALIBRATED_TEMPLATE if calibration else _BASE_TEMPLATE
 
@@ -78,8 +91,22 @@ _XML_ANSWER_RE = re.compile(r"<answer>\s*([\s\S]*?)\s*</answer>", re.IGNORECASE)
 def _clean_to_float(s: str) -> Optional[float]:
     """Normalize common LaTeX/Unicode artifacts and parse as float.
 
-    Handles unicode minus, thousands separators, and trailing percent.
-    Returns ``None`` on failure.
+    This helper:
+    - Replaces LaTeX percent and thousand separators.
+    - Converts Unicode minus to ASCII minus.
+    - Strips surrounding dollar signs and whitespace.
+    - Removes trailing percent signs, if any.
+
+    Parameters
+    ----------
+    s:
+        Raw string containing a numeric value, potentially with LaTeX or
+        formatting artifacts.
+
+    Returns
+    -------
+    value:
+        Parsed float value if successful, otherwise ``None``.
     """
     s = (
         s.replace(r"\%", "%")
@@ -100,9 +127,23 @@ def _clean_to_float(s: str) -> Optional[float]:
 def extract_numeric_answer(text: str) -> Optional[float]:
     """Extract a numeric answer from model output.
 
-    Strategy:
-      1) Prefer the **last** ``\boxed{...}`` region and take the first number inside.
-      2) If none, fall back to the **last** number anywhere in the text.
+    Strategy
+    --------
+    1. Prefer the **last** ``\\boxed{...}`` region and take the first number
+       inside it.
+    2. If no boxed answer is present, fall back to the **last** number
+       appearing anywhere in the text.
+
+    Parameters
+    ----------
+    text:
+        Full model output as a string.
+
+    Returns
+    -------
+    value:
+        Parsed float value if a numeric answer can be extracted, otherwise
+        ``None``.
     """
     boxed_matches = list(_BOXED_RE.finditer(text))
     if boxed_matches:
@@ -120,16 +161,45 @@ def extract_numeric_answer(text: str) -> Optional[float]:
 
 
 def extract_xml_answer(text: str) -> str:
-    """Return the content inside `<answer> ... </answer>` if present, else empty string.
+    """Extract the content inside an ``<answer> ... </answer>`` block.
 
-    Trims whitespace and supports multiline answers.
+    The function uses a multiline, case-insensitive regex to locate the first
+    ``<answer>...</answer>`` span and returns its inner text, stripped of
+    leading and trailing whitespace. If no such block exists, an empty string
+    is returned.
+
+    Parameters
+    ----------
+    text:
+        Full model output as a string, potentially containing XML-like tags.
+
+    Returns
+    -------
+    answer:
+        The stripped inner content of the ``<answer>`` tag, or ``""`` if no
+        answer block is found.
     """
     m = _XML_ANSWER_RE.search(text)
     return m.group(1).strip() if m else ""
 
 
 def extract_hash_answer(text: str) -> str | None:
-    """Extract the GSM8K-style final answer that follows a ``####`` delimiter."""
+    """Extract a GSM8K-style final answer following a ``####`` delimiter.
+
+    This is intended for the original GSM8K format where the final answer is
+    separated from the solution text by ``####`` (e.g., ``"... solution ... #### 42"``).
+
+    Parameters
+    ----------
+    text:
+        The GSM8K answer string containing the ``####`` delimiter.
+
+    Returns
+    -------
+    answer:
+        The substring following ``####``, stripped of whitespace, or ``None``
+        if the delimiter is not present.
+    """
     if "####" not in text:
         return None
     return text.split("####", 1)[1].strip()
@@ -139,11 +209,24 @@ def extract_hash_answer(text: str) -> str | None:
 # Datasets
 # ---------------------------------------------------------------------------
 
+
 def get_gsm8k_questions(split: str = "train") -> Dataset:
     """Load GSM8K and format records for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    The function reads the global CLI config via :func:`parse_args` to
+    determine whether calibration is enabled, and injects the corresponding
+    system prompt into each example.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (e.g., ``"train"``, ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` where each example has fields:
+        ``"prompt"`` (list of chat messages) and ``"answer"`` (gold solution).
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -162,10 +245,20 @@ def get_gsm8k_questions(split: str = "train") -> Dataset:
 
 
 def get_aime25_questions(split: str = "test") -> Dataset:
-    """Load math-ai/aime25 and format records for chat-style conversation.
+    """Load ``math-ai/aime25`` and format records for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    The function reads the global CLI config to determine whether calibration
+    is enabled, and injects the corresponding system prompt.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (typically ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with ``"prompt"`` and ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -185,10 +278,20 @@ def get_aime25_questions(split: str = "test") -> Dataset:
 
 
 def get_math500_questions(split: str = "test") -> Dataset:
-    """Load HuggingFaceH4/MATH-500 and format records for chat-style conversation.
+    """Load ``HuggingFaceH4/MATH-500`` and format for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    The function reads the global CLI config to determine whether calibration
+    is enabled, and injects the corresponding system prompt.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (typically ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with ``"prompt"`` and ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -208,10 +311,24 @@ def get_math500_questions(split: str = "test") -> Dataset:
 
 
 def get_olympiadbench_questions(split: str = "train") -> Dataset:
-    """Load Hothan/OlympiadBench (OE_TO_maths_en_COMP) and format for chat-style conversation.
+    """Load ``Hothan/OlympiadBench`` and format for chat-style conversation.
 
-    Uses 'question' as prompt and keeps 'final_answer' as a list[str].
-    This is compatible with the grader that checks multiple correct answers.
+    This loader uses the ``OE_TO_maths_en_COMP`` configuration. The
+    ``final_answer`` field (which may be a string or list) is normalized to a
+    list of strings, which is compatible with graders that support multiple
+    correct answers.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (e.g. ``"train"``, ``"validation"``, ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with:
+        - ``"prompt"``: list of chat messages.
+        - ``"answer"``: list of acceptable answers.
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -239,10 +356,20 @@ def get_olympiadbench_questions(split: str = "train") -> Dataset:
 
 
 def get_amc23_questions(split: str = "test") -> Dataset:
-    """Load math-ai/amc23 and format records for chat-style conversation.
+    """Load ``math-ai/amc23`` and format records for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    The function reads the global CLI config to determine whether calibration
+    is enabled, and injects the corresponding system prompt.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (typically ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with ``"prompt"`` and ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -262,10 +389,20 @@ def get_amc23_questions(split: str = "test") -> Dataset:
 
 
 def get_minervamath_questions(split: str = "test") -> Dataset:
-    """Load math-ai/minervamath and format records for chat-style conversation.
+    """Load ``math-ai/minervamath`` and format records for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    The function reads the global CLI config to determine whether calibration
+    is enabled, and injects the corresponding system prompt.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (typically ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with ``"prompt"`` and ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -284,58 +421,24 @@ def get_minervamath_questions(split: str = "test") -> Dataset:
     return ds.map(_format)
 
 
-def get_competition_math_questions(split: str = "train"):
-    args = parse_args()
-    calibration = args.core.calibration
-
-    ds = load_dataset("qwedsacf/competition_math", split=split)
-
-    # Keep Level 3–5
-    ds = ds.filter(lambda ex: ex["level"] in {"Level 3", "Level 4", "Level 5"})
-
-    # Regexes
-    BOXED_RE = re.compile(r"\\boxed\s*\{([\s\S]*?)\}")   # match \boxed{ ... } across newlines
-    NUM_RE   = re.compile(r"^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$", re.IGNORECASE)  # ints/decimals/sci
-    FRAC_RE  = re.compile(r"^-?\s*\d+\s*/\s*\d+$")       # simple fractions like -a/b
-
-    def extract_final(sol: str):
-        m = BOXED_RE.search(sol)
-        if not m:
-            return None
-        final = m.group(1).strip()
-
-        # strip surrounding $ or trailing punctuation/spaces
-        final = final.strip("$ ").rstrip(".,;")
-        final = re.sub(r"\s+", "", final)
-
-        # keep numbers and simple fractions only
-        if NUM_RE.fullmatch(final) or FRAC_RE.fullmatch(final):
-            return final
-        return None
-
-    def _format(example):
-        final = extract_final(example["solution"])
-        return {
-            "prompt": [
-                {"role": "system", "content": build_system_prompt(calibration)},
-                {"role": "user",   "content": example["problem"]},
-            ],
-            "answer": final,
-        }
-
-    # Overwrite columns so trainer only sees what it needs
-    ds = ds.map(_format, remove_columns=ds.column_names)
-    # Now drop rows without a usable answer
-    ds = ds.filter(lambda x: x["answer"] is not None)
-
-    return ds
-
-
 def get_aquarat_questions(split: str = "test") -> Dataset:
-    """Load AQUA-RAT and format records for chat-style conversation.
+    """Load ``deepmind/aqua_rat`` and format records for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    The function:
+    - Selects the correct option based on the provided answer letter.
+    - Strips the multiple-choice label (e.g. ``"A)"``) from the final answer.
+    - Injects the appropriate system prompt depending on calibration.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (typically ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with standardized ``"prompt"`` and
+        ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration
@@ -369,15 +472,28 @@ def get_aquarat_questions(split: str = "test") -> Dataset:
 
 
 def get_livemathbench_questions(split: str = "test") -> Dataset:
-    """Load LiveMathBench and format records for chat-style conversation.
+    """Load ``opencompass/LiveMathBench`` and format for chat-style conversation.
 
-    The function reads the global CLI args to determine whether calibration is
-    enabled so it can inject the correct system prompt.
+    This loader:
+    - Uses the ``v202412_AMC_en`` configuration.
+    - Strips surrounding ``$...$`` or ``$$...$$`` from answers where present.
+    - Injects the appropriate system prompt depending on calibration.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (typically ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with standardized ``"prompt"`` and
+        ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration
 
-    data = load_dataset("opencompass/LiveMathBench", 'v202412_AMC_en')[split]
+    data = load_dataset("opencompass/LiveMathBench", "v202412_AMC_en")[split]
 
     def strip_dollars(s: str) -> str:
         # remove surrounding $...$ or $$...$$
@@ -404,9 +520,23 @@ def get_livemathbench_questions(split: str = "test") -> Dataset:
 
 
 def get_dapo_math_questions(split: str = "train") -> Dataset:
-    """Load open-r1/DAPO-Math-17k-Processed (en) and format records for chat-style conversation.
+    """Load ``open-r1/DAPO-Math-17k-Processed`` and format for chat-style conversation.
 
-    Uses the 'prompt' field as the user question and 'solution' as the final answer.
+    The loader:
+    - Uses the ``"en"`` configuration.
+    - Treats the ``"prompt"`` field as the user query.
+    - Treats the ``"solution"`` field as the final answer.
+
+    Parameters
+    ----------
+    split:
+        Dataset split to load (e.g. ``"train"``, ``"validation"``, ``"test"``).
+
+    Returns
+    -------
+    dataset:
+        A :class:`datasets.Dataset` with standardized ``"prompt"`` and
+        ``"answer"`` fields.
     """
     args = parse_args()
     calibration = args.core.calibration

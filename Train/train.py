@@ -19,20 +19,40 @@ from trl import GRPOConfig
 from trl.trainer.grpo_trainer import GRPOTrainer
 
 # Local: hybrid trainer that adds DPO regularization
-from Train.trainer import GRPOWithDPOTrainer
+from Train.trainer import AMIR_GRPO_Trainer
 
 # Datasets
-from Data.data import get_gsm8k_questions, get_competition_math_questions, get_dapo_math_questions
+from Data.data import (
+    get_gsm8k_questions,
+    get_competition_math_questions,
+    get_dapo_math_questions,
+)
 
 
 # ---------------------------------------------------------------------------
 # Config construction helpers
 # ---------------------------------------------------------------------------
 
-def build_grpo_config(args) -> GRPOConfig:
-    """Build a :class:`GRPOConfig` from parsed CLI args (dataclass/namespace).
 
-    Uses `bf16_fp16_flags()` to set precision flags appropriately.
+def build_grpo_config(args) -> GRPOConfig:
+    """Build a :class:`GRPOConfig` from parsed CLI arguments.
+
+    This helper uses :func:`bf16_fp16_flags` to set precision flags
+    appropriately and maps your structured configuration (`args`) into a
+    :class:`GRPOConfig` instance suitable for GRPO / AMIR-GRPO training.
+
+    Parameters
+    ----------
+    args:
+        Parsed CLI arguments returned by :func:`config.parse_args`. Expected
+        to expose nested attributes such as ``training``, ``sched_optim``,
+        ``generation``, ``algorithm``, ``logging``, and ``core``.
+
+    Returns
+    -------
+    config:
+        An initialized :class:`GRPOConfig` instance ready to be passed to the
+        trainer.
     """
     bf16, fp16 = bf16_fp16_flags()
     return GRPOConfig(
@@ -77,10 +97,32 @@ def build_grpo_config(args) -> GRPOConfig:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
+    """Entry point for GRPO / AMIR-GRPO training.
+
+    This function orchestrates the full training pipeline:
+
+    1. Parse CLI configuration.
+    2. Initialize Weights & Biases (if configured).
+    3. Create the output directory.
+    4. Build training arguments.
+    5. Load trainable and (optionally) reference models.
+    6. Load the selected dataset.
+    7. Configure reward functions (with or without calibration).
+    8. Instantiate and run the trainer.
+    9. Save artifacts locally.
+    10. Push the trained model to the Hugging Face Hub.
+
+    Returns
+    -------
+    None
+        This function is intended to be run as a script entry point.
+    """
     # Parse CLI into typed config
     args = parse_args()
 
+    # Log in to Weights & Biases using an API key provided via config.
     wandb.login(args.logging.wandb_api_key)
 
     # Output path
@@ -90,12 +132,10 @@ def main() -> None:
     # Build trainer args
     training_args = build_grpo_config(args)
 
-    # ----------------------------
     # Model loading
-    # ----------------------------
     model_name = args.core.model_name
-    lora_rank = args.core.lora_rank 
-    max_seq_length = args.core.max_seq_length 
+    lora_rank = args.core.lora_rank
+    max_seq_length = args.core.max_seq_length
     load_in_4bit = bool(args.core.load_in_4bit)
 
     model, tokenizer = load_train_model(
@@ -105,9 +145,7 @@ def main() -> None:
         load_in_4bit=load_in_4bit,
     )
 
-    # ----------------------------
-    # Dataset Loading
-    # ----------------------------
+    # Dataset loading
     dataset_name = args.core.dataset_name.lower()
     dataset_split = args.core.dataset_split
 
@@ -120,9 +158,7 @@ def main() -> None:
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
-    # ----------------------------
-    # Reference model (for DPO)
-    # ----------------------------
+    # Reference model (for regularization term)
     implicit_ref = args.dpo.implicit_ref
     ref_model = None
     if not implicit_ref:
@@ -132,9 +168,7 @@ def main() -> None:
             load_in_4bit=load_in_4bit,
         )
 
-    # ----------------------------
     # Reward functions
-    # ----------------------------
     use_calibration = args.core.calibration
     if use_calibration:
         reward_funcs = [
@@ -154,11 +188,9 @@ def main() -> None:
             correctness_reward_func,
         ]
 
-    # ----------------------------
-    # Trainer selection & init
-    # ----------------------------
+    # Trainer selection & initialization
     trainer_type = args.core.trainer_type
-    TrainerCls = GRPOWithDPOTrainer if trainer_type == "grpo_dpo" else GRPOTrainer
+    TrainerCls = AMIR_GRPO_Trainer if trainer_type == "grpo_dpo" else GRPOTrainer
 
     trainer_kwargs = dict(
         model=model,
@@ -168,7 +200,7 @@ def main() -> None:
         train_dataset=train_dataset,
     )
 
-    if TrainerCls is GRPOWithDPOTrainer:
+    if TrainerCls is AMIR_GRPO_Trainer:
         trainer_kwargs.update(
             ref_model=ref_model,
             lambda_pair=args.dpo.lambda_pair,
@@ -182,22 +214,18 @@ def main() -> None:
     trainer = TrainerCls(**trainer_kwargs)
     trainer.train()
 
-    # ----------------------------
     # Save artifacts locally
-    # ----------------------------
     model.save_pretrained(out.as_posix())
     tokenizer.save_pretrained(out.as_posix())
     model.config.save_pretrained(out.as_posix())
     save_config_files(args, out)
 
-    # ----------------------------
     # Push to Hugging Face Hub
-    # ----------------------------
-    hf_token = "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"
-    user = "AmirHossein2002"
+    hf_token = "HF_TOKEN"
+    user = "HF-USERNAME"
     private = False
     repo_name = out.name
-    repo_id = f"{user}/{repo_name}" 
+    repo_id = f"{user}/{repo_name}"
 
     api = HfApi(token=hf_token)
 
@@ -214,13 +242,12 @@ def main() -> None:
         repo_id=repo_id,
         repo_type="model",
         ignore_patterns=[
-            "checkpoint-*",      # ignore checkpoint folders at root
-            "checkpoint-*/**",   # ignore everything inside them
-            "global_step*",      # (optional) HF Trainer-style steps
+            "checkpoint-*",  # ignore checkpoint folders at root
+            "checkpoint-*/**",  # ignore everything inside them
+            "global_step*",  # (optional) HF Trainer-style steps
             "global_step*/**",
         ],
     )
-
 
 
 if __name__ == "__main__":

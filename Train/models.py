@@ -32,6 +32,7 @@ __all__ = [
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def load_train_model(
     model_name: str = "Qwen/Qwen2.5-7B-Instruct",
     lora_rank: int = 16,
@@ -41,7 +42,32 @@ def load_train_model(
     target_modules: Sequence[str] | None = None,
     seed: int = 0,
 ):
-    """Load the trainable policy model with LoRA heads attached."""
+    """
+    Load the trainable policy model with LoRA heads attached.
+
+    Parameters
+    ----------
+    model_name:
+        Hugging Face / model hub identifier of the base model.
+    lora_rank:
+        LoRA rank `r`. Higher values increase capacity and memory use.
+    max_seq_length:
+        Maximum sequence length for the model and tokenizer.
+    load_in_4bit:
+        If True, attempt to load the base model in 4-bit quantization.
+    target_modules:
+        Optional custom list of module names to apply LoRA to. If None,
+        `TARGET_MODULES` is used.
+    seed:
+        Random seed passed to Unsloth for LoRA initialization.
+
+    Returns
+    -------
+    model:
+        The trainable model with LoRA adapters applied.
+    tokenizer:
+        The tokenizer associated with the base model.
+    """
 
     tm = list(target_modules) if target_modules is not None else TARGET_MODULES
 
@@ -71,7 +97,7 @@ def load_train_model(
     setattr(model, "is_loaded_in_4bit", False)
     setattr(model, "is_loaded_in_8bit", False)
 
-    model.config.use_cache = False  # needed when training with gradient checkpointing
+    model.config.use_cache = False
     return model, tokenizer
 
 
@@ -80,7 +106,24 @@ def load_ref_model(
     max_seq_length: int = 2048,
     load_in_4bit: bool = False,
 ):
-    """Load the frozen reference model (no LoRA heads)."""
+    """
+    Load the frozen reference model (no LoRA heads).
+
+    Parameters
+    ----------
+    model_name:
+        Hugging Face / model hub identifier of the base model.
+    max_seq_length:
+        Maximum sequence length for the model.
+    load_in_4bit:
+        If True, attempt to load the reference model in 4-bit
+        quantization.
+
+    Returns
+    -------
+    ref_model:
+        The frozen reference model with no LoRA adapters.
+    """
 
     bf16, _ = bf16_fp16_flags()
     dtype = torch.bfloat16 if bf16 else torch.float16
@@ -98,7 +141,16 @@ def load_ref_model(
 
 
 def bf16_fp16_flags() -> Tuple[bool, bool]:
-    """Return `(supports_bf16, should_use_fp16)`."""
-    
+    """
+    Decide whether to use bfloat16 or fallback to float16.
+
+    Returns
+    -------
+    supports_bf16:
+        True if the current system supports bfloat16.
+    should_use_fp16:
+        True if float16 should be used instead of bfloat16.
+    """
+
     bf16 = is_bfloat16_supported()
     return bf16, (not bf16)

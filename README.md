@@ -4,16 +4,8 @@
 
 <p>
   <a href="https://amirhosseinyari2002.github.io/"><b>Amir Hossein Yari</b></a>
-  ·
+  ,
   <a href="https://www.fajrikoto.com/home"><b>Fajri Koto</b></a>
-</p>
-
-<p>
-  <a href="#-key-results">Key Results</a> •
-  <a href="#-installation-and-setup">Installation</a> •
-  <a href="#-training">Training</a> •
-  <a href="#-evaluation">Evaluation</a> •
-  <a href="#-citation">Citation</a>
 </p>
 
 </div>

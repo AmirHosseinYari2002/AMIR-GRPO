@@ -159,9 +159,9 @@ def main() -> None:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
     # Reference model (for regularization term)
-    implicit_ref = args.dpo.implicit_ref
+    ref_free = args.dpo.ref_free
     ref_model = None
-    if not implicit_ref:
+    if not ref_free:
         ref_model = load_ref_model(
             model_name=model_name,
             max_seq_length=max_seq_length,
@@ -190,7 +190,7 @@ def main() -> None:
 
     # Trainer selection & initialization
     trainer_type = args.core.trainer_type
-    TrainerCls = AMIR_GRPO_Trainer if trainer_type == "grpo_dpo" else GRPOTrainer
+    TrainerCls = AMIR_GRPO_Trainer if trainer_type == "amir_grpo" else GRPOTrainer
 
     trainer_kwargs = dict(
         model=model,
@@ -203,8 +203,8 @@ def main() -> None:
     if TrainerCls is AMIR_GRPO_Trainer:
         trainer_kwargs.update(
             ref_model=ref_model,
-            lambda_pair=args.dpo.lambda_pair,
-            pair_threshold=args.dpo.pair_threshold,
+            lambda_reg=args.dpo.lambda_reg,
+            reward_margin=args.dpo.reward_margin,
             beta_dpo=args.dpo.beta_dpo,
             pair_mining=args.dpo.pair_mining,
             max_pairs_per_group=args.dpo.max_pairs_per_group,

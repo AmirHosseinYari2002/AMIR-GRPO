@@ -172,9 +172,9 @@ class DPOConfig:
 
     Parameters
     ----------
-    lambda_pair:
+    lambda_reg:
         Initial interpolation weight for the DPO pairwise loss term.
-    pair_threshold:
+    reward_margin:
         Minimum reward difference required to form a preference pair.
     beta_dpo:
         Inverse temperature for the DPO logistic transform.
@@ -182,17 +182,17 @@ class DPOConfig:
         Pair mining strategy (e.g. ``"all"``, ``"topk"``).
     max_pairs_per_group:
         Optional cap on pairs per prompt group. If ``None``, no cap is applied.
-    implicit_ref:
+    ref_free:
         If ``True``, use the policy as its own reference; otherwise, use a
         separate reference model.
     """
 
-    lambda_pair: float = 0.01
-    pair_threshold: float = 1.5
+    lambda_reg: float = 0.01
+    reward_margin: float = 1.5
     beta_dpo: float = 0.2
     pair_mining: str = "all"
     max_pairs_per_group: Optional[int] = None
-    implicit_ref: bool = True
+    ref_free: bool = True
 
 
 @dataclass
@@ -515,13 +515,13 @@ def build_parser() -> argparse.ArgumentParser:
     # --- DPO Integration ---
     dpo = parser.add_argument_group("DPO Integration (only if trainer_type='grpo_dpo')")
     dpo.add_argument(
-        "--lambda_pair",
+        "--lambda_reg",
         type=float,
         default=0.01,
         help="Interpolation weight for DPO pairwise term relative to GRPO loss.",
     )
     dpo.add_argument(
-        "--pair_threshold",
+        "--reward_margin",
         type=float,
         default=2.0,
         help="Score difference threshold to form a preference pair.",
@@ -544,7 +544,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional cap on pairs per prompt group. Use 'None' to disable.",
     )
     dpo.add_argument(
-        "--implicit_ref",
+        "--ref_free",
         type=lambda x: str(x).lower() in {"true", "1", "yes"},
         default=True,
         help="Whether to use the policy as its own reference (true/false).",
@@ -639,12 +639,12 @@ def _namespace_to_config(ns: argparse.Namespace) -> Config:
     )
 
     dpo = DPOConfig(
-        lambda_pair=ns.lambda_pair,
-        pair_threshold=ns.pair_threshold,
+        lambda_reg=ns.lambda_reg,
+        reward_margin=ns.reward_margin,
         beta_dpo=ns.beta_dpo,
         pair_mining=ns.pair_mining,
         max_pairs_per_group=ns.max_pairs_per_group,
-        implicit_ref=ns.implicit_ref,
+        ref_free=ns.ref_free,
     )
 
     logging = LoggingConfig(

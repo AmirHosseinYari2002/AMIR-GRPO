@@ -618,7 +618,7 @@ class AMIR_GRPO_Trainer(GRPOTrainer):
             self._metrics[mode]["pairs/mean_gap"].append(gaps.mean().item())
 
         print(
-            f"grpo_loss: {grpo_loss}  -  self.lambda_pair * dpo_loss: {self.lambda_reg * dpo_loss}"
+            f"grpo_loss: {grpo_loss}  -  self.lambda_reg * dpo_loss: {self.lambda_reg * dpo_loss}"
         )
         mixed = grpo_loss + self.lambda_reg * dpo_loss
 

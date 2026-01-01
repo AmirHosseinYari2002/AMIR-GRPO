@@ -36,7 +36,7 @@ class CoreConfig:
     test_dataset_split:
         Split used for evaluation (e.g., ``"test"``).
     trainer_type:
-        Trainer variant: ``"grpo"`` for vanilla GRPO, or ``"grpo_dpo"`` for
+        Trainer variant: ``"grpo"`` for vanilla GRPO, or ``"amir_grpo"`` for
         GRPO with DPO regularization.
     calibration:
         If ``True``, enable calibration-aware rewards (e.g. requiring
@@ -53,7 +53,7 @@ class CoreConfig:
     )
     dataset_split: str = "train"
     test_dataset_split: str = "test"
-    trainer_type: str = "grpo"  # {"grpo", "grpo_dpo"}
+    trainer_type: str = "grpo"  # {"grpo", "amir_grpo"}
     calibration: bool = False
 
 
@@ -167,7 +167,7 @@ class AlgorithmConfig:
 class DPOConfig:
     """DPO integration parameters.
 
-    These parameters are used when ``trainer_type == "grpo_dpo"`` and govern
+    These parameters are used when ``trainer_type == "amir_grpo"`` and govern
     the strength and structure of the DPO regularization term.
 
     Parameters
@@ -240,7 +240,7 @@ class Config:
     algorithm:
         GRPO loss-specific parameters.
     dpo:
-        DPO integration parameters when using ``trainer_type="grpo_dpo"``.
+        DPO integration parameters when using ``trainer_type="amir_grpo"``.
     logging:
         Logging, checkpointing, and Hub integration configuration.
     """
@@ -378,10 +378,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     core.add_argument(
         "--trainer_type",
-        choices=["grpo", "grpo_dpo"],
+        choices=["grpo", "amir_grpo"],
         default="grpo",
-        required=True,
-        help="'grpo' = vanilla GRPO; 'grpo_dpo' = GRPO with DPO regularization.",
+        required=False,
+        help="'grpo' = vanilla GRPO; 'amir_grpo' = GRPO with DPO regularization.",
     )
     core.add_argument(
         "--calibration",
@@ -513,7 +513,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # --- DPO Integration ---
-    dpo = parser.add_argument_group("DPO Integration (only if trainer_type='grpo_dpo')")
+    dpo = parser.add_argument_group("DPO Integration (only if trainer_type='amir_grpo')")
     dpo.add_argument(
         "--lambda_reg",
         type=float,

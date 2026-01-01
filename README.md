@@ -12,20 +12,26 @@
 
 ---
 
-## ✨ What is AMIR-GRPO?
+## 🌟 What is AMIR-GRPO?
 
-AMIR-GRPO is an extension of GRPO (Group Relative Policy Optimization) that leverages *implicit preference signals* derived from within-group reward rankings.  
-It introduces a preference-style regularization term to strengthen learning signals—without requiring external human preference labels.
+AMIR-GRPO extends GRPO with an implicit DPO-style contrastive regularizer derived directly from intra-rollout reward rankings, requiring no additional annotations.
+
+### Practical Impacts:
+✅ **Richer supervision:** turns each rollout group into many preference constraints rather than a handful of scalar advantages.<br>
+✅ **Sharper decision boundary:** explicitly contrasts high- vs. low-reward completions, strengthening suppression of poor trajectories and and producing a cleaner separation between correct and incorrect reasoning.<br>
+✅ **Mitigate length bias:** addresses GRPO’s intrinsic length bias by preventing penalty dilution across long, low-reward trajectories.<br>
+✅ **Broader gains:** improves coverage and generalization on mathematical reasoning benchmarks beyond instances solved by standard GRPO.
+
 
 ---
 
-## 📈 Key Results
+## 📈 Results
 
 
 
 ---
 
-## 🛠️ Installation and Setup
+## 🛠️ Installation
 
 ```bash
 # Clone the repository
@@ -39,7 +45,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 Training
+## 🏋️ Training
 
 Training is launched via `python -m Train.train` and the CLI mirrors the full configuration.
 
@@ -90,7 +96,7 @@ python -m Train.train \
 
 ---
 
-## 📊 Evaluation
+## 🔬 Evaluation
 
 Evaluate the performance of the trained model using the Eval.eval script.
 

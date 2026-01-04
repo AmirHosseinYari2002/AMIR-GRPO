@@ -5,7 +5,16 @@ import torch
 
 from config import parse_args
 from Eval.eval_utils import evaluate_model_batched, load_model_and_tokenizer
-from Data.data import get_gsm8k_questions, get_aime25_questions, get_math500_questions, get_olympiadbench_questions, get_amc23_questions, get_minervamath_questions, get_aquarat_questions, get_livemathbench_questions
+from Data.data import (
+    get_gsm8k_questions,
+    get_aime25_questions,
+    get_math500_questions,
+    get_olympiadbench_questions,
+    get_amc23_questions,
+    get_minervamath_questions,
+    get_aquarat_questions,
+    get_livemathbench_questions,
+)
 
 
 def main() -> None:
@@ -18,7 +27,7 @@ def main() -> None:
     # ----------------------------
     # HF token
     # ----------------------------
-    hf_token = "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"
+    hf_token = "HF_TOKEN"
 
     # ----------------------------
     # Dataset loading

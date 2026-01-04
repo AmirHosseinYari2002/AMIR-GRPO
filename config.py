@@ -513,7 +513,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # --- DPO Integration ---
-    dpo = parser.add_argument_group("DPO Integration (only if trainer_type='amir_grpo')")
+    dpo = parser.add_argument_group(
+        "DPO Integration (only if trainer_type='amir_grpo')"
+    )
     dpo.add_argument(
         "--lambda_reg",
         type=float,

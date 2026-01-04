@@ -20,7 +20,7 @@ from typing import Optional
 
 import sympy
 from latex2sympy2_extended import latex2sympy
-from math_verify import (ExprExtractionConfig, LatexExtractionConfig, parse, verify)
+from math_verify import ExprExtractionConfig, LatexExtractionConfig, parse, verify
 from pylatexenc import latex2text
 from sympy import N, simplify
 from sympy.parsing import sympy_parser

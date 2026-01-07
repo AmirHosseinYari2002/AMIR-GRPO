@@ -16,16 +16,28 @@
 
 AMIR-GRPO extends GRPO with an implicit DPO-style contrastive regularizer derived directly from intra-rollout reward rankings, requiring no additional annotations.
 
-### Practical Impacts:
+## 📈 Key Results & Impact
+
 ✅ **Richer supervision:** turns each rollout group into many preference constraints rather than a handful of scalar advantages.<br>
 ✅ **Sharper decision boundary:** explicitly contrasts high- vs. low-reward completions, strengthening suppression of poor trajectories and and producing a cleaner separation between correct and incorrect reasoning.<br>
 ✅ **Mitigate length bias:** addresses GRPO’s intrinsic length bias by preventing penalty dilution across long, low-reward trajectories.<br>
 ✅ **Broader gains:** improves coverage and generalization on mathematical reasoning benchmarks beyond instances solved by standard GRPO.
 
+<table>
+  <tr>
+    <!-- Left: main results -->
+    <td valign="top" align="center" style="padding-right:1px;">
+      <img src="Assets/Main.png" width="700" alt="Main benchmark results (GRPO → AMIR-GRPO)"/>
+    </td>
+    <td valign="top" align="center">
+      <img src="Assets/Coverage.png" width="450" alt="Coverage analysis"/>
+      <br/>
+      <img src="Assets/Margin.png" width="400" alt="Preference margin separation"/>
+    </td>
+  </tr>
+</table>
 
----
 
-## 📈 Results
 
 
 

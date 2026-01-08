@@ -8,6 +8,8 @@
   <a href="https://www.fajrikoto.com/home"><b>Fajri Koto</b></a>
 </p>
 
+[![arXiv](https://img.shields.io/badge/arXiv-2601.03661-b31b1b.svg)](https://arxiv.org/abs/2601.03661)
+
 </div>
 
 ---
@@ -122,3 +124,14 @@ python -m Eval.eval \
 
 
 ## 📝 Citation
+
+```bibtex
+@misc{yari2026amirgrpoinducingimplicitpreference,
+      title={AMIR-GRPO: Inducing Implicit Preference Signals into GRPO}, 
+      author={Amir Hossein Yari and Fajri Koto},
+      year={2026},
+      eprint={2601.03661},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2601.03661}, 
+}
